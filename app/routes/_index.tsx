@@ -1,59 +1,49 @@
-import { LinksFunction, defer } from "@remix-run/node";
-import { useLoaderData, Await } from "@remix-run/react";
-import React, { Suspense } from "react";
-import Comments from "~/components/Comments";
+import { json, LoaderFunction } from '@remix-run/node';
+import { useLoaderData } from '@remix-run/react';
 import commentsStyles from "../styles/comments.css"
+import { Suspense } from 'react';
+import Comments from '../components/Comments';
 
 let dataComments = ["Comments 1", "Comments 2", "Comments 3", "Comments 4"];
 
-export const links:LinksFunction= ()=>[
+export const links = () => [
   {rel: "stylesheet", href: commentsStyles}
 ]
 
-const fetchComments = async () => {
-  return new Promise<Array<string>>((resolve) =>
-    setTimeout(() => {
-      fetch("http://jsonplaceholder.typicode.com/users")
-        .then((res) => res.json())
-        .then((data) => {
-          const commentsArray = data.map((comment: any) => comment.name);
-          resolve(commentsArray);
-        })
-        .catch((err) => {
-          resolve(dataComments);
-          console.log(err);
-        });
-    }, 2000)
-  );
-};
-export async function loader() {
-  const comments = fetchComments() as Promise<Array<string>>;
-  return defer({
-    comments,
-  });
-}
-const InitialRender = () => {
-  return (
-    <ul>
-      <li>Loading...</li>
-      <li>Loading...</li>
-    </ul>
-  );
+export let loader: LoaderFunction = async () => {
+  try {
+    let response = await fetch('http://jsonplaceholder.typicode.com/users');
+    if (!response.ok) throw new Error("Oh no, we couldn't fetch the data!");
+
+    let data = await response.json();
+    const commentsArray = data.map((comment: any) => comment.name);
+
+    // Return the data with caching headers
+    return json(commentsArray, {
+      headers: {
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    // Return the default comments with caching headers
+    return json(dataComments, {
+      headers: {
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      }
+    });
+  }
 };
 
-const Index: React.FC = () => {
-  const { comments } = useLoaderData<typeof loader>();
+export default function Index() {
+  let comments = useLoaderData() as string[];
 
   return (
-    <>
-      <Comments comments={["1", "2", "3"]} />
-      <Suspense fallback={<InitialRender />}>
-        <Await resolve={comments}>
-          {(comments) => <Comments comments={comments} />}
-        </Await>
+    <div>
+      <h1>Comments</h1>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Comments comments={comments} />
       </Suspense>
-    </>
+    </div>
   );
-};
-
-export default Index;
+}
