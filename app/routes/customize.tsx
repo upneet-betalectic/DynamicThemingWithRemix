@@ -14,7 +14,11 @@ export let loader: LoaderFunction = async ({ request }) => {
 
   let theme = session.get("theme");
   console.log(theme);
-  return theme || defaultTheme;
+  return json(theme || defaultTheme , {
+    headers: {
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 };
 
 export let action: ActionFunction = async ({ request }) => {
@@ -45,6 +49,7 @@ export let action: ActionFunction = async ({ request }) => {
   return redirect("/customize", {
     headers: {
       "Set-Cookie": await commitSession(session),
+      "Cache-Control": "public, max-age=3600",
     },
   });
 };

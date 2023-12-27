@@ -19,6 +19,7 @@ export let loader: LoaderFunction = async ({ request }) => {
   return new Response(css, {
     headers: {
       "Content-Type": "text/css",
+      // "Cache-Control": "public, max-age=1 , must-revalidate",
     },
   });
 };
